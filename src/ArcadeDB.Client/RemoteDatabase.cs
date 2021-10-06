@@ -10,19 +10,7 @@ namespace ArcadeDb.Client;
 public enum QueryLanguage
 {
     Sql,
-    Cypher,
-    Gremlin,
-    MongoDb
-}
-
-// {"exception":"java.lang.IllegalArgumentException","detail":"Database 'banana-pie' already exists","error":"Internal error"}
-// { "result" : "ok"}
-
-public record DatabaseResult(string? Exception, string? Detail, string? Error, string? Result)
-{
-    public bool IsError => this.Error != null;
-
-    public static DatabaseResult UnknownError() => new DatabaseResult(null, null, "An unknown error has occurred.", null);
+    Cypher
 }
 
 public class RemoteDatabase : IDisposable
@@ -50,18 +38,28 @@ public class RemoteDatabase : IDisposable
     public void Use(string database) => this.Database = database;
 
     public async Task<DatabaseResult> Create(string? database = null) =>
-        (await this.HttpCommand("create", database ?? this.Database)).ToObject<DatabaseResult>() ?? DatabaseResult.UnknownError();
+        await this.HttpCommand("create", database ?? this.Database);
 
     public async Task<DatabaseResult> Drop(string? database = null) =>
-        (await this.HttpCommand("drop", database ?? this.Database)).ToObject<DatabaseResult>() ?? DatabaseResult.UnknownError();
+        await this.HttpCommand("drop", database ?? this.Database);
 
-    public async Task<JsonElement> Command(string command, object @params, QueryLanguage language = QueryLanguage.Sql) =>
-        await this.HttpCommand("command", this.Database, command, @params, language);
+    public async Task<DatabaseResult<T>> Command<T>(string command, object @params, QueryLanguage language = QueryLanguage.Sql) =>
+        await this.HttpCommand<DatabaseResult<T>>("command", this.Database, command, @params, language).ConfigureAwait(false);
 
-    public async Task<JsonElement> Query(string command, object @params, QueryLanguage language = QueryLanguage.Sql) =>
-        await this.HttpCommand("query", this.Database, command, @params, language);
+    public async Task<DatabaseResult<T>> Query<T>(string command, object @params, QueryLanguage language = QueryLanguage.Sql) =>
+        await this.HttpCommand<DatabaseResult<T>>("query", this.Database, command, @params, language).ConfigureAwait(false);
 
-    private async Task<JsonElement> HttpCommand(string operation, string database, string? command = null, object? @params = null,
+    public async Task<DatabaseResult> Command(string command, object @params, QueryLanguage language = QueryLanguage.Sql) =>
+        await this.HttpCommand("command", this.Database, command, @params, language).ConfigureAwait(false);
+
+    public async Task<DatabaseResult> Query(string command, object @params, QueryLanguage language = QueryLanguage.Sql) =>
+        await this.HttpCommand("query", this.Database, command, @params, language).ConfigureAwait(false);
+
+    private async Task<DatabaseResult> HttpCommand(string operation, string database, string? command = null, object? @params = null,
+        QueryLanguage language = QueryLanguage.Sql) =>
+        await this.HttpCommand<DatabaseResult>(operation, database, command, @params, language).ConfigureAwait(false);
+
+    private async Task<T> HttpCommand<T>(string operation, string database, string? command = null, object? @params = null,
         QueryLanguage language = QueryLanguage.Sql)
     {
         var requestJson = command == null ? "{}" : new { language = language.ToString().ToLower(), command, serializer = "record", @params }.ToJson();
@@ -72,9 +70,12 @@ public class RemoteDatabase : IDisposable
         {
             if (response.StatusCode != HttpStatusCode.InternalServerError) response.EnsureSuccessStatusCode();
             var error = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
-            if (!error.RootElement.TryGetProperty("exception", out var exception)) return error.RootElement;
-            var exceptionName = exception.GetString()?.Split(".").LastOrDefault();
+            if (!error.RootElement.TryGetProperty("exception", out var exception))
+            {
+                throw new ArcadeDbException($"An unknown error has occured.\n{error.RootElement.GetString()}");
+            }
 
+            var exceptionName = exception.GetString()?.Split(".").LastOrDefault();
             throw exceptionName switch
             {
                 nameof(ParseException) or "SyntaxException" => new ParseException(error.RootElement.GetProperty("detail").GetString()),
@@ -83,8 +84,8 @@ public class RemoteDatabase : IDisposable
             };
         }
 
-        var document = await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync());
-        return document.RootElement;
+        return await JsonSerializer.DeserializeAsync<T>(await response.Content.ReadAsStreamAsync(), Json.DefaultSerializerOptions)
+            .ConfigureAwait(false) ?? throw new ArcadeDbException($"Could not deserialize result as {nameof(T)}.");
     }
 
     private void RequestClusterConfiguration()
