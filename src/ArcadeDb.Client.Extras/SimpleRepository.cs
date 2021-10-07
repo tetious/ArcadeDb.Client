@@ -38,7 +38,7 @@ public class SimpleRepository<T> : IDisposable
     public async Task<T> Get(string recordId)
     {
         if (RidRegex.IsMatch(recordId) == false) throw new ArgumentException("Id must be a Record Id in the form of #0.0.");
-        var result = await this.database.Query<T>($"SELECT FROM {EntityName} WHERE @rid={recordId}");
+        var result = await this.database.Query<T>("SELECT FROM :recordId", new { recordId });
         return result.Single();
     }
 

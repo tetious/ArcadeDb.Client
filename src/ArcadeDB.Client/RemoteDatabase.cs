@@ -39,31 +39,30 @@ public class RemoteDatabase : IDisposable
         await this.HttpExecute("drop", database ?? this.Database);
 
     public async Task<T[]> Query<T>(string command, params object[] parameters)
-        where T : class => await this.Query<T>(command, Sql, parameters).ConfigureAwait(false);
+        => await this.Query<T>(command, Sql, parameters).ConfigureAwait(false);
 
     public async Task<T[]> Query<T>(string command, IEnumerable<object>? parameters = null)
-        where T : class => await this.Query<T>(command, Sql, parameters).ConfigureAwait(false);
+        => await this.Query<T>(command, Sql, parameters).ConfigureAwait(false);
 
     public async Task<T[]> Query<T>(string command, QueryLanguage language, params object[] parameters)
-        where T : class => await this.Query<T>(command, language, (IEnumerable<object>)parameters).ConfigureAwait(false);
+        => await this.Query<T>(command, language, (IEnumerable<object>)parameters).ConfigureAwait(false);
 
     public async Task<T[]> Query<T>(string command, QueryLanguage language, IEnumerable<object>? parameters = null)
-        where T : class => await this.HttpExecute<T>("query", this.Database, command, parameters?.ToArray(), language).ConfigureAwait(false);
+        => await this.HttpExecute<T>("query", this.Database, command, parameters?.ToArray(), language).ConfigureAwait(false);
 
     public async Task<T[]> Execute<T>(string command, params object[] parameters)
-        where T : class => await this.Execute<T>(command, Sql, parameters).ConfigureAwait(false);
+        => await this.Execute<T>(command, Sql, parameters).ConfigureAwait(false);
 
     public async Task<T[]> Execute<T>(string command, IEnumerable<object>? parameters = null)
-        where T : class => await this.Execute<T>(command, Sql, parameters).ConfigureAwait(false);
+        => await this.Execute<T>(command, Sql, parameters).ConfigureAwait(false);
 
     public async Task<T[]> Execute<T>(string command, QueryLanguage language, params object[] parameters)
-        where T : class => await this.Execute<T>(command, language, (IEnumerable<object>)parameters).ConfigureAwait(false);
+        => await this.Execute<T>(command, language, (IEnumerable<object>)parameters).ConfigureAwait(false);
 
     public async Task<T[]> Execute<T>(string command, QueryLanguage language, IEnumerable<object>? parameters = null)
-        where T : class => await this.HttpExecute<T>("command", this.Database, command, parameters?.ToArray(), language).ConfigureAwait(false);
+        => await this.HttpExecute<T>("command", this.Database, command, parameters?.ToArray(), language).ConfigureAwait(false);
 
     private async Task<T[]> HttpExecute<T>(string operation, string database, string? command = null, object[]? parameters = null, QueryLanguage language = Sql)
-        where T : class
     {
         if (parameters == null || parameters.Length == 1)
         {
@@ -81,7 +80,6 @@ public class RemoteDatabase : IDisposable
 
     private async Task<T[]> HttpExecuteSingle<T>(string operation, string database, string? command = null, object? parameters = null,
         QueryLanguage language = Sql)
-        where T : class
     {
         using var response = await this.HttpClientExecute(operation, database, command, parameters, language);
 
