@@ -33,39 +33,39 @@ public class RemoteDatabase : IDisposable
     public void Use(string database) => this.Database = database;
 
     public async Task Create(string? database = null) =>
-        await this.HttpExecuteSingle<DBNull>("create", database ?? this.Database);
+        await this.HttpExecute("create", database ?? this.Database);
 
     public async Task Drop(string? database = null) =>
-        await this.HttpExecuteSingle<DBNull>("drop", database ?? this.Database);
+        await this.HttpExecute("drop", database ?? this.Database);
 
-    public async Task<T[]> Query<T>(string command, params object[] parameters) =>
-        await this.Query<T>(command, Sql, parameters).ConfigureAwait(false);
+    public async Task<T[]> Query<T>(string command, params object[] parameters)
+        where T : class => await this.Query<T>(command, Sql, parameters).ConfigureAwait(false);
 
-    public async Task<T[]> Query<T>(string command, IEnumerable<object>? parameters = null) =>
-        await this.Query<T>(command, Sql, parameters).ConfigureAwait(false);
+    public async Task<T[]> Query<T>(string command, IEnumerable<object>? parameters = null)
+        where T : class => await this.Query<T>(command, Sql, parameters).ConfigureAwait(false);
 
-    public async Task<T[]> Query<T>(string command, QueryLanguage language, params object[] parameters) =>
-        await this.Query<T>(command, language, (IEnumerable<object>)parameters).ConfigureAwait(false);
+    public async Task<T[]> Query<T>(string command, QueryLanguage language, params object[] parameters)
+        where T : class => await this.Query<T>(command, language, (IEnumerable<object>)parameters).ConfigureAwait(false);
 
-    public async Task<T[]> Query<T>(string command, QueryLanguage language, IEnumerable<object>? parameters = null) =>
-        await this.HttpExecute<T>("query", this.Database, command, parameters?.ToArray(), language).ConfigureAwait(false);
+    public async Task<T[]> Query<T>(string command, QueryLanguage language, IEnumerable<object>? parameters = null)
+        where T : class => await this.HttpExecute<T>("query", this.Database, command, parameters?.ToArray(), language).ConfigureAwait(false);
 
-    public async Task<T[]> Execute<T>(string command, params object[] parameters) =>
-        await this.Execute<T>(command, Sql, parameters).ConfigureAwait(false);
+    public async Task<T[]> Execute<T>(string command, params object[] parameters)
+        where T : class => await this.Execute<T>(command, Sql, parameters).ConfigureAwait(false);
 
-    public async Task<T[]> Execute<T>(string command, IEnumerable<object>? parameters = null) =>
-        await this.Execute<T>(command, Sql, parameters).ConfigureAwait(false);
+    public async Task<T[]> Execute<T>(string command, IEnumerable<object>? parameters = null)
+        where T : class => await this.Execute<T>(command, Sql, parameters).ConfigureAwait(false);
 
-    public async Task<T[]> Execute<T>(string command, QueryLanguage language, params object[] parameters) =>
-        await this.Execute<T>(command, language, (IEnumerable<object>)parameters).ConfigureAwait(false);
+    public async Task<T[]> Execute<T>(string command, QueryLanguage language, params object[] parameters)
+        where T : class => await this.Execute<T>(command, language, (IEnumerable<object>)parameters).ConfigureAwait(false);
 
-    public async Task<T[]> Execute<T>(string command, QueryLanguage language, IEnumerable<object>? parameters = null) =>
-        await this.HttpExecute<T>("command", this.Database, command, parameters?.ToArray(), language).ConfigureAwait(false);
+    public async Task<T[]> Execute<T>(string command, QueryLanguage language, IEnumerable<object>? parameters = null)
+        where T : class => await this.HttpExecute<T>("command", this.Database, command, parameters?.ToArray(), language).ConfigureAwait(false);
 
-    private async Task<T[]> HttpExecute<T>(string operation, string database, string? command = null, IReadOnlyCollection<object>? parameters = null,
-        QueryLanguage language = Sql)
+    private async Task<T[]> HttpExecute<T>(string operation, string database, string? command = null, object[]? parameters = null, QueryLanguage language = Sql)
+        where T : class
     {
-        if (parameters == null || parameters.Count == 1)
+        if (parameters == null || parameters.Length == 1)
         {
             return await this.HttpExecuteSingle<T>(operation, database, command, parameters?.Single(), language);
         }
@@ -81,13 +81,32 @@ public class RemoteDatabase : IDisposable
 
     private async Task<T[]> HttpExecuteSingle<T>(string operation, string database, string? command = null, object? parameters = null,
         QueryLanguage language = Sql)
+        where T : class
+    {
+        using var response = await this.HttpClientExecute(operation, database, command, parameters, language);
+
+        var databaseResult = await JsonSerializer.DeserializeAsync<DatabaseResult<T>>(await response.Content.ReadAsStreamAsync(), Json.DefaultSerializerOptions)
+            .ConfigureAwait(false) ?? throw new ArcadeDbException($"Could not deserialize result as {nameof(T)}.");
+
+        return databaseResult.Result;
+    }
+
+    private async Task<string> HttpExecute(string operation, string database, string? command = null, object? parameters = null, QueryLanguage language = Sql)
+    {
+        using var response = await this.HttpClientExecute(operation, database, command, parameters, language);
+        return (await JsonDocument.ParseAsync(await response.Content.ReadAsStreamAsync()).ConfigureAwait(false))
+            .RootElement.GetProperty("result").GetString() ?? throw new ArcadeDbException("Could not deserialize to string.");
+    }
+
+    private async Task<HttpResponseMessage> HttpClientExecute(string operation, string database, string? command = null, object? parameters = null,
+        QueryLanguage language = Sql)
     {
         var requestJson = command == null
             ? "{}"
             : new { language = language.ToString().ToLower(), command, serializer = "record", @params = parameters }.ToJson();
         using var requestBody = new StringContent(requestJson, Encoding.UTF8, "application/json");
 
-        using var response = await this.httpClient.PostAsync($"{operation}/{database}", requestBody);
+        var response = await this.httpClient.PostAsync($"{operation}/{database}", requestBody);
         if (response.IsSuccessStatusCode == false)
         {
             if (response.StatusCode != HttpStatusCode.InternalServerError) response.EnsureSuccessStatusCode();
@@ -108,12 +127,7 @@ public class RemoteDatabase : IDisposable
 
         Debug.WriteLine(await response.Content.ReadAsStringAsync());
 
-        if (typeof(T) == typeof(DBNull)) return null!;
-
-        var databaseResult = await JsonSerializer.DeserializeAsync<DatabaseResult<T>>(await response.Content.ReadAsStreamAsync(), Json.DefaultSerializerOptions)
-            .ConfigureAwait(false) ?? throw new ArcadeDbException($"Could not deserialize result as {nameof(T)}.");
-
-        return databaseResult.Result;
+        return response;
     }
 
     private void RequestClusterConfiguration()
