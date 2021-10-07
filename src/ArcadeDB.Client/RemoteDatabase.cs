@@ -1,10 +1,10 @@
 ﻿using System.Diagnostics;
-using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
 using System.Text;
 using System.Text.Json;
+using static ArcadeDb.Client.QueryLanguage;
 
 namespace ArcadeDb.Client;
 
@@ -32,32 +32,59 @@ public class RemoteDatabase : IDisposable
 
     public void Use(string database) => this.Database = database;
 
-    public async Task<DatabaseResult> Create(string? database = null) =>
-        await this.HttpCommand("create", database ?? this.Database);
+    public async Task Create(string? database = null) =>
+        await this.HttpExecuteSingle<DBNull>("create", database ?? this.Database);
 
-    public async Task<DatabaseResult> Drop(string? database = null) =>
-        await this.HttpCommand("drop", database ?? this.Database);
+    public async Task Drop(string? database = null) =>
+        await this.HttpExecuteSingle<DBNull>("drop", database ?? this.Database);
 
-    public async Task<DatabaseResult<T>> Command<T>(string command, object? @params = null, QueryLanguage language = QueryLanguage.Sql) =>
-        await this.HttpCommand<DatabaseResult<T>>("command", this.Database, command, @params, language).ConfigureAwait(false);
+    public async Task<T[]> Query<T>(string command, params object[] parameters) =>
+        await this.Query<T>(command, Sql, parameters).ConfigureAwait(false);
 
-    public async Task<DatabaseResult<T>> Query<T>(string command, object? @params = null, QueryLanguage language = QueryLanguage.Sql) =>
-        await this.HttpCommand<DatabaseResult<T>>("query", this.Database, command, @params, language).ConfigureAwait(false);
+    public async Task<T[]> Query<T>(string command, IEnumerable<object>? parameters = null) =>
+        await this.Query<T>(command, Sql, parameters).ConfigureAwait(false);
 
-    public async Task<DatabaseResult> Command(string command, object? @params = null, QueryLanguage language = QueryLanguage.Sql) =>
-        await this.HttpCommand("command", this.Database, command, @params, language).ConfigureAwait(false);
+    public async Task<T[]> Query<T>(string command, QueryLanguage language, params object[] parameters) =>
+        await this.Query<T>(command, language, (IEnumerable<object>)parameters).ConfigureAwait(false);
 
-    public async Task<DatabaseResult> Query(string command, object? @params = null, QueryLanguage language = QueryLanguage.Sql) =>
-        await this.HttpCommand("query", this.Database, command, @params, language).ConfigureAwait(false);
+    public async Task<T[]> Query<T>(string command, QueryLanguage language, IEnumerable<object>? parameters = null) =>
+        await this.HttpExecute<T>("query", this.Database, command, parameters?.ToArray(), language).ConfigureAwait(false);
 
-    private async Task<DatabaseResult> HttpCommand(string operation, string database, string? command = null, object? @params = null,
-        QueryLanguage language = QueryLanguage.Sql) =>
-        await this.HttpCommand<DatabaseResult>(operation, database, command, @params, language).ConfigureAwait(false);
+    public async Task<T[]> Execute<T>(string command, params object[] parameters) =>
+        await this.Execute<T>(command, Sql, parameters).ConfigureAwait(false);
 
-    private async Task<T> HttpCommand<T>(string operation, string database, string? command = null, object? @params = null,
-        QueryLanguage language = QueryLanguage.Sql)
+    public async Task<T[]> Execute<T>(string command, IEnumerable<object>? parameters = null) =>
+        await this.Execute<T>(command, Sql, parameters).ConfigureAwait(false);
+
+    public async Task<T[]> Execute<T>(string command, QueryLanguage language, params object[] parameters) =>
+        await this.Execute<T>(command, language, (IEnumerable<object>)parameters).ConfigureAwait(false);
+
+    public async Task<T[]> Execute<T>(string command, QueryLanguage language, IEnumerable<object>? parameters = null) =>
+        await this.HttpExecute<T>("command", this.Database, command, parameters?.ToArray(), language).ConfigureAwait(false);
+
+    private async Task<T[]> HttpExecute<T>(string operation, string database, string? command = null, IReadOnlyCollection<object>? parameters = null,
+        QueryLanguage language = Sql)
     {
-        var requestJson = command == null ? "{}" : new { language = language.ToString().ToLower(), command, serializer = "record", @params }.ToJson();
+        if (parameters == null || parameters.Count == 1)
+        {
+            return await this.HttpExecuteSingle<T>(operation, database, command, parameters?.Single(), language);
+        }
+
+        var list = new List<T>();
+        foreach (var parameter in parameters)
+        {
+            list.AddRange(await this.HttpExecuteSingle<T>(operation, database, command, parameter, language));
+        }
+
+        return list.ToArray();
+    }
+
+    private async Task<T[]> HttpExecuteSingle<T>(string operation, string database, string? command = null, object? parameters = null,
+        QueryLanguage language = Sql)
+    {
+        var requestJson = command == null
+            ? "{}"
+            : new { language = language.ToString().ToLower(), command, serializer = "record", @params = parameters }.ToJson();
         using var requestBody = new StringContent(requestJson, Encoding.UTF8, "application/json");
 
         using var response = await this.httpClient.PostAsync($"{operation}/{database}", requestBody);
@@ -81,8 +108,12 @@ public class RemoteDatabase : IDisposable
 
         Debug.WriteLine(await response.Content.ReadAsStringAsync());
 
-        return await JsonSerializer.DeserializeAsync<T>(await response.Content.ReadAsStreamAsync(), Json.DefaultSerializerOptions)
+        if (typeof(T) == typeof(DBNull)) return null!;
+
+        var databaseResult = await JsonSerializer.DeserializeAsync<DatabaseResult<T>>(await response.Content.ReadAsStreamAsync(), Json.DefaultSerializerOptions)
             .ConfigureAwait(false) ?? throw new ArcadeDbException($"Could not deserialize result as {nameof(T)}.");
+
+        return databaseResult.Result;
     }
 
     private void RequestClusterConfiguration()
