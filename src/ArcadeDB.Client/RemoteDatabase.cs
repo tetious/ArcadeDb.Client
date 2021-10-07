@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System.Diagnostics;
+using System.Linq;
 using System.Net;
 using System.Net.Http;
 using System.Net.Http.Headers;
@@ -6,12 +7,6 @@ using System.Text;
 using System.Text.Json;
 
 namespace ArcadeDb.Client;
-
-public enum QueryLanguage
-{
-    Sql,
-    Cypher
-}
 
 public class RemoteDatabase : IDisposable
 {
@@ -43,16 +38,16 @@ public class RemoteDatabase : IDisposable
     public async Task<DatabaseResult> Drop(string? database = null) =>
         await this.HttpCommand("drop", database ?? this.Database);
 
-    public async Task<DatabaseResult<T>> Command<T>(string command, object @params, QueryLanguage language = QueryLanguage.Sql) =>
+    public async Task<DatabaseResult<T>> Command<T>(string command, object? @params = null, QueryLanguage language = QueryLanguage.Sql) =>
         await this.HttpCommand<DatabaseResult<T>>("command", this.Database, command, @params, language).ConfigureAwait(false);
 
-    public async Task<DatabaseResult<T>> Query<T>(string command, object @params, QueryLanguage language = QueryLanguage.Sql) =>
+    public async Task<DatabaseResult<T>> Query<T>(string command, object? @params = null, QueryLanguage language = QueryLanguage.Sql) =>
         await this.HttpCommand<DatabaseResult<T>>("query", this.Database, command, @params, language).ConfigureAwait(false);
 
-    public async Task<DatabaseResult> Command(string command, object @params, QueryLanguage language = QueryLanguage.Sql) =>
+    public async Task<DatabaseResult> Command(string command, object? @params = null, QueryLanguage language = QueryLanguage.Sql) =>
         await this.HttpCommand("command", this.Database, command, @params, language).ConfigureAwait(false);
 
-    public async Task<DatabaseResult> Query(string command, object @params, QueryLanguage language = QueryLanguage.Sql) =>
+    public async Task<DatabaseResult> Query(string command, object? @params = null, QueryLanguage language = QueryLanguage.Sql) =>
         await this.HttpCommand("query", this.Database, command, @params, language).ConfigureAwait(false);
 
     private async Task<DatabaseResult> HttpCommand(string operation, string database, string? command = null, object? @params = null,
@@ -83,6 +78,8 @@ public class RemoteDatabase : IDisposable
                 _ => new ArcadeDbException(error.RootElement.GetProperty("detail").GetString())
             };
         }
+
+        Debug.WriteLine(await response.Content.ReadAsStringAsync());
 
         return await JsonSerializer.DeserializeAsync<T>(await response.Content.ReadAsStreamAsync(), Json.DefaultSerializerOptions)
             .ConfigureAwait(false) ?? throw new ArcadeDbException($"Could not deserialize result as {nameof(T)}.");

@@ -1,8 +1,3 @@
-using System;
-using System.Threading.Tasks;
-using FluentAssertions;
-using Xunit;
-
 namespace ArcadeDb.Client.IntegrationTests;
 
 public class RemoteDatabaseTests : IDisposable
@@ -26,7 +21,7 @@ public class RemoteDatabaseTests : IDisposable
     [Fact]
     public async Task CanDeserialize()
     {
-        var result = await this.target.Command<Movie[]>("match (m:Movie) where m.title = $title return m", new { title = "The Matrix" }, QueryLanguage.Cypher);
+        var result = await this.target.Command<Movie>("match (m:Movie) where m.title = $title return m", new { title = "The Matrix" }, QueryLanguage.Cypher);
         result.Result.Should().ContainSingle()
             .Which.Should().BeEquivalentTo(new Movie("The Matrix", "Welcome to the Real World", 1999));
     }
@@ -34,7 +29,7 @@ public class RemoteDatabaseTests : IDisposable
     [Fact]
     public async Task CanDeserialize_Sql()
     {
-        var result = await this.target.Command<Movie[]>("select from Movie where title = :title", new { title = "The Matrix" });
+        var result = await this.target.Command<Movie>("select from Movie where title = :title", new { title = "The Matrix" });
         result.Result.Should().ContainSingle()
             .Which.Should().BeEquivalentTo(new Movie("The Matrix", "Welcome to the Real World", 1999));
     }

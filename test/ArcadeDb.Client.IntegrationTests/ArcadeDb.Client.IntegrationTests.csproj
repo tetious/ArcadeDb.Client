@@ -9,6 +9,7 @@
     <ItemGroup>
         <PackageReference Include="FluentAssertions" Version="6.1.0" />
         <PackageReference Include="Microsoft.NET.Test.Sdk" Version="16.9.4" />
+        <PackageReference Include="NodaTime.Testing" Version="3.0.7" />
         <PackageReference Include="xunit" Version="2.4.1" />
         <PackageReference Include="xunit.runner.visualstudio" Version="2.4.3">
             <IncludeAssets>runtime; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
@@ -21,6 +22,7 @@
     </ItemGroup>
 
     <ItemGroup>
+      <ProjectReference Include="..\..\src\ArcadeDb.Client.Extras\ArcadeDb.Client.Extras.csproj" />
       <ProjectReference Include="..\..\src\ArcadeDb.Client\ArcadeDb.Client.csproj" />
     </ItemGroup>
 

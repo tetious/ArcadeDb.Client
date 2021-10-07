@@ -8,6 +8,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArcadeDb.Client", "src\Arca
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArcadeDb.Client.IntegrationTests", "test\ArcadeDb.Client.IntegrationTests\ArcadeDb.Client.IntegrationTests.csproj", "{7C9F4285-9833-46EA-9B67-F8B69ECB2027}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "ArcadeDb.Client.Extras", "src\ArcadeDb.Client.Extras\ArcadeDb.Client.Extras.csproj", "{22DE5FAF-EDFC-4AB8-BF3A-7A5158A1C519}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -16,6 +18,7 @@ Global
 	GlobalSection(NestedProjects) = preSolution
 		{A034B342-C3C5-494D-9138-572F821EA2B9} = {079019A0-B944-4A3E-838D-D756EB7D9B9A}
 		{7C9F4285-9833-46EA-9B67-F8B69ECB2027} = {921751B9-1D79-4DD1-A159-076AEA938C53}
+		{22DE5FAF-EDFC-4AB8-BF3A-7A5158A1C519} = {079019A0-B944-4A3E-838D-D756EB7D9B9A}
 	EndGlobalSection
 	GlobalSection(ProjectConfigurationPlatforms) = postSolution
 		{A034B342-C3C5-494D-9138-572F821EA2B9}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
@@ -26,5 +29,9 @@ Global
 		{7C9F4285-9833-46EA-9B67-F8B69ECB2027}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{7C9F4285-9833-46EA-9B67-F8B69ECB2027}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{7C9F4285-9833-46EA-9B67-F8B69ECB2027}.Release|Any CPU.Build.0 = Release|Any CPU
+		{22DE5FAF-EDFC-4AB8-BF3A-7A5158A1C519}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{22DE5FAF-EDFC-4AB8-BF3A-7A5158A1C519}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{22DE5FAF-EDFC-4AB8-BF3A-7A5158A1C519}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{22DE5FAF-EDFC-4AB8-BF3A-7A5158A1C519}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 EndGlobal

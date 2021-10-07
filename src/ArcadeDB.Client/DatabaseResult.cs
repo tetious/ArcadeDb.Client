@@ -13,5 +13,5 @@ public record DatabaseResult(string? Exception, string? Detail, string? Error)
 
 public record DatabaseResult<T>(string? Exception, string? Detail, string? Error) : DatabaseResult(Exception, Detail, Error)
 {
-    public new T Result { get; init; }
+    public new T[] Result { get; init; }
 }
