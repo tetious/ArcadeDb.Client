@@ -20,7 +20,7 @@ public class SimpleRepositoryTests : IDisposable
     [Fact]
     public async Task CanCreate_Complex()
     {
-        var entity = new ComplexTestEntity(new [] { "banana", "chocolate" }, new  SimpleTestEntity("Banana", 12));
+        var entity = new ComplexTestEntity(new[] { "banana", "chocolate" }, new SimpleTestEntity("Banana", 12));
         var createdEntity = await this.complexTarget.Insert(entity);
 
         createdEntity.Rid.Should().NotBeEmpty();
@@ -69,11 +69,14 @@ public class SimpleRepositoryTests : IDisposable
 
     private readonly SimpleRepository<SimpleTestEntity> target;
     private readonly SimpleRepository<ComplexTestEntity> complexTarget;
+    private readonly ArcadeServer server;
 
     public SimpleRepositoryTests()
     {
-        var database = new RemoteDatabase("http://localhost:2480", "_test", "root", "locallocal");
-        database.Create();
+        this.server = new ArcadeServer("http://localhost:2480", "root", "locallocal");
+        this.server.Create("_test");
+        var database = this.server.Use("_test");
+
         this.target = new SimpleRepository<SimpleTestEntity>(database, new FakeClock(SystemClock.Instance.GetCurrentInstant()));
         this.complexTarget = new SimpleRepository<ComplexTestEntity>(database, new FakeClock(SystemClock.Instance.GetCurrentInstant()));
     }
@@ -81,6 +84,6 @@ public class SimpleRepositoryTests : IDisposable
 
     public void Dispose()
     {
-        this.target.Dispose();
+        this.server.Dispose();
     }
 }

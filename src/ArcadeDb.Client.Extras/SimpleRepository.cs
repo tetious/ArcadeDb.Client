@@ -14,15 +14,15 @@ public abstract record Entity
     public Instant? UpdatedDate { get; init; }
 }
 
-public class SimpleRepository<T> : IDisposable
+public class SimpleRepository<T>
     where T : Entity
 {
-    private readonly RemoteDatabase database;
+    private readonly ArcadeDatabase database;
     private readonly IClock clock;
     private readonly string propertiesTemplate;
     private static readonly string EntityName = typeof(T).Name;
 
-    public SimpleRepository(RemoteDatabase database, IClock clock)
+    public SimpleRepository(ArcadeDatabase database, IClock clock)
     {
         this.database = database;
         this.clock = clock;
@@ -54,10 +54,5 @@ public class SimpleRepository<T> : IDisposable
         var result = await this.database.Execute<JsonElement>($"INSERT INTO {EntityName} CONTENT {this.propertiesTemplate} RETURN @rid", entity);
         entity = entity with { Rid = result.SingleOrDefault().GetProperty("@rid").GetString() ?? throw new ArcadeDbException("Create failed.") };
         return entity;
-    }
-
-    public void Dispose()
-    {
-        this.database.Dispose();
     }
 }
