@@ -6,3 +6,5 @@ global using ArcadeDb.Client.Extras;
 global using System.Threading.Tasks;
 global using FluentAssertions;
 global using Xunit;
+
+[assembly: CollectionBehavior(DisableTestParallelization = true)]
