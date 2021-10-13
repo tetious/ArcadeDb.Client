@@ -4,6 +4,8 @@ namespace ArcadeDb.Client.Extras;
 
 public abstract record Entity
 {
+    public Guid Id { get; init; }
+
     [JsonPropertyName("@rid")]
     public RecordId RecordId { get; init; }
 
@@ -17,6 +19,9 @@ public abstract record Entity
 
     public abstract record Document : Entity { }
 }
+
+public record Marker<EType>(Guid Id)
+    where EType : Entity;
 
 public abstract record Edge
 {

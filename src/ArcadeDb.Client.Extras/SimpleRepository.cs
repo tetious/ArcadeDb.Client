@@ -8,6 +8,8 @@ public interface ISimpleRepository<T>
 {
     Task<T?> Get(RecordId recordId);
 
+    Task<T?> Get(Guid id);
+
     Task<T[]> Query(string whereFragment, object? parameters = null);
 
     Task<T[]> QueryCypher(string query, object? parameters = null);
@@ -72,7 +74,7 @@ public class SimpleRepository<T> : ISimpleRepository<T>
 
     public async Task<T> Insert(T entity)
     {
-        entity = entity with { CreatedDate = this.Clock.GetCurrentInstant() };
+        entity = entity with { Id = Guid.NewGuid(), CreatedDate = this.Clock.GetCurrentInstant() };
         var result = await this.Database.Execute<JsonElement>($"INSERT INTO {EntityName} CONTENT {this.createTemplate} RETURN @rid", entity);
         entity = entity with { RecordId = result.SingleOrDefault().GetProperty("@rid").GetString() ?? throw new ArcadeDbException("Create failed.") };
         return entity;

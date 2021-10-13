@@ -2,7 +2,7 @@
 
 namespace ArcadeDb.Client;
 
-public readonly struct ArcadeDatabase
+public class ArcadeDatabase
 {
     private readonly ArcadeServer server;
 

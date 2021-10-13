@@ -45,9 +45,9 @@ public class VertexRepositoryTests : IDisposable
 
     public VertexRepositoryTests()
     {
-        this.server = new ArcadeServer("http://localhost:2480", "root", "locallocal");
-        this.movieRepository = new VertexRepository<Movie>(this.server.Use("Movies"), this.clock);
-        this.personRepository = new VertexRepository<Person>(this.server.Use("Movies"), this.clock);
+        this.server = new ArcadeServer("http://root:locallocal@localhost:2480");
+        this.movieRepository = new VertexRepository<Movie>(this.server.Use("movies"), this.clock);
+        this.personRepository = new VertexRepository<Person>(this.server.Use("movies"), this.clock);
     }
 
     private record Movie(string Title, string Tagline, int Released) : Entity.Vertex;

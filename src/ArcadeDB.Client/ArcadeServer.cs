@@ -12,11 +12,19 @@ public class ArcadeServer : IDisposable
 {
     private readonly HttpClient httpClient;
 
-    public ArcadeServer(string uri, string username, string password)
+    /// <summary>
+    /// Configure a connection to an ArcadeDb server.
+    /// </summary>
+    /// <param name="connectionString">Example: http[s]://username:password@localhost:2480</param>
+    public ArcadeServer(string connectionString)
     {
+        var parsed = new Uri(connectionString);
+        var userPassword = parsed.UserInfo.Split(":");
+        var (url, username, password) = ($"{parsed.Scheme}://{parsed.Host}:{parsed.Port}", userPassword[0], userPassword[1]);
+
         this.httpClient = new HttpClient
         {
-            BaseAddress = new Uri($"{uri}/api/v1/"),
+            BaseAddress = new Uri($"{url}/api/v1/"),
             // TODO: Cleanup
             DefaultRequestHeaders =
             {

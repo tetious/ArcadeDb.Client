@@ -13,14 +13,14 @@ public class ArcadeServerTests : IDisposable
     public async Task CanListDatabases()
     {
         var databases = await this.target.ListDatabases();
-        databases.Should().HaveCountGreaterOrEqualTo(1).And.Contain("Movies");
+        databases.Should().HaveCountGreaterOrEqualTo(1).And.Contain("movies");
     }
 
     private readonly ArcadeServer target;
 
     public ArcadeServerTests()
     {
-        this.target = new ArcadeServer("http://localhost:2480", "root", "locallocal");
+        this.target = new ArcadeServer("http://root:locallocal@localhost:2480");
     }
 
     public void Dispose()

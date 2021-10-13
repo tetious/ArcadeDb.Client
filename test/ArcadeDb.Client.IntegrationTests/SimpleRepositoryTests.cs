@@ -95,7 +95,7 @@ public class SimpleRepositoryTests : IDisposable
 
     public SimpleRepositoryTests()
     {
-        this.server = new ArcadeServer("http://localhost:2480", "root", "locallocal");
+        this.server = new ArcadeServer("http://root:locallocal@localhost:2480");
         this.server.Create("_test");
         var database = this.server.Use("_test");
 
