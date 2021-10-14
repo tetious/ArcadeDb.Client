@@ -37,7 +37,7 @@ public class SimpleRepository<T> : ISimpleRepository<T>
         this.Clock = clock;
 
         var properties = typeof(T).GetProperties(BindingFlags.Public | BindingFlags.Instance)
-            .Where(pi => pi.IsInitOnly() && pi.Name != nameof(Entity.RecordId)).ToArray();
+            .Where(pi => pi.CanWrite && pi.Name != nameof(Entity.RecordId)).ToArray();
 
         string paramList(IEnumerable<PropertyInfo> props) => string.Join(",", props.Select(pi => $"\"{pi.Name.ToCamelCase()}\": :{pi.Name.ToCamelCase()}"));
 

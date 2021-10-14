@@ -9,45 +9,62 @@ public class SimpleRepositoryTests : IDisposable
     public async Task CanCreate()
     {
         var entity = new SimpleTestEntity("Banana", 12);
-        var createdEntity = await this.target.Insert(entity);
+        var created = await this.target.Insert(entity);
+        var loaded = await this.target.Get(created.Id);
 
-        createdEntity.RecordId.Should().NotBeNull();
-        createdEntity.Name.Should().Be(entity.Name);
-        createdEntity.Age.Should().Be(entity.Age);
-        createdEntity.CreatedDate.Should().NotBeNull();
-        createdEntity.UpdatedDate.Should().BeNull();
+        loaded.RecordId.Should().NotBeNull();
+        loaded.Name.Should().Be(entity.Name);
+        loaded.Age.Should().Be(entity.Age);
+        loaded.CreatedDate.Should().NotBeNull().And.Subject.Should().BeGreaterThan(Instant.MinValue);
+        loaded.UpdatedDate.Should().BeNull();
+    }
+
+    [Fact]
+    public async Task CreateDoesNotSkipNonInitProps()
+    {
+        var entity = new SimpleTestEntity("Banana", 12) { SettableProp = "Cheese" };
+        var created = await this.target.Insert(entity);
+        var loaded = await this.target.Get(created.Id);
+
+        loaded.Id.Should().NotBeEmpty();
+        loaded.RecordId.Should().NotBeNull();
+        loaded.SettableProp.Should().Be("Cheese");
+        loaded.Name.Should().Be(entity.Name);
+        loaded.Age.Should().Be(entity.Age);
+        loaded.CreatedDate.Should().NotBeNull().And.Subject.Should().BeGreaterThan(Instant.MinValue);
+        loaded.UpdatedDate.Should().BeNull();
     }
 
     [Fact]
     public async Task CanCreate_Complex()
     {
         var entity = new ComplexTestEntity(new[] { "banana", "chocolate" }, new SimpleTestEntity("Banana", 12));
-        var createdEntity = await this.complexTarget.Insert(entity);
+        var created = await this.complexTarget.Insert(entity);
+        var loaded = await this.complexTarget.Get(created.Id);
 
-        createdEntity.RecordId.Should().NotBeNull();
-        createdEntity.SubDoc.Name.Should().Be(entity.SubDoc.Name);
-        createdEntity.SubDoc.Age.Should().Be(entity.SubDoc.Age);
-        createdEntity.PieFlavors.Should().BeEquivalentTo(entity.PieFlavors);
-        createdEntity.CreatedDate.Should().NotBeNull();
-        createdEntity.UpdatedDate.Should().BeNull();
+        loaded.RecordId.Should().NotBeNull();
+        loaded.SubDoc.Name.Should().Be(entity.SubDoc.Name);
+        loaded.SubDoc.Age.Should().Be(entity.SubDoc.Age);
+        loaded.PieFlavors.Should().BeEquivalentTo(entity.PieFlavors);
+        loaded.CreatedDate.Should().NotBeNull().And.Subject.Should().BeGreaterThan(Instant.MinValue);
+        loaded.UpdatedDate.Should().BeNull();
     }
 
     [Fact]
     public async Task CanUpdate()
     {
         var entity = new SimpleTestEntity("Banana", 12);
-        var createdEntity = await this.target.Insert(entity);
-        createdEntity.Name.Should().Be(entity.Name);
-        createdEntity.Age.Should().Be(entity.Age);
-        createdEntity.CreatedDate.Should().NotBeNull();
-        createdEntity.UpdatedDate.Should().BeNull();
+        var created = await this.target.Insert(entity);
+        created.Id.Should().NotBeEmpty();
 
         entity = new SimpleTestEntity("Apple", 12);
-        var updatedEntity = await this.target.Update(entity);
+        var updated = await this.target.Update(entity);
 
-        updatedEntity.Age.Should().Be(entity.Age);
-        updatedEntity.Name.Should().Be(entity.Name);
-        updatedEntity.UpdatedDate.Should().NotBeNull();
+        updated.Age.Should().Be(entity.Age);
+        updated.Name.Should().Be(entity.Name);
+        updated.CreatedDate.Should().NotBeNull().And.Subject.Should().BeGreaterThan(Instant.MinValue);
+        updated.UpdatedDate.Should().NotBeNull();
+        updated.UpdatedDate.Value.Should().BeGreaterThan(Instant.MinValue);
     }
 
     [Fact]
@@ -84,7 +101,10 @@ public class SimpleRepositoryTests : IDisposable
         queried.UpdatedDate.Should().BeNull();
     }
 
-    private record SimpleTestEntity(string Name, int Age) : Entity.Document;
+    private record SimpleTestEntity(string Name, int Age) : Entity.Document
+    {
+        public string SettableProp { get; set; }
+    }
 
     private record ComplexTestEntity(string[] PieFlavors, SimpleTestEntity SubDoc) : Entity.Vertex;
 
