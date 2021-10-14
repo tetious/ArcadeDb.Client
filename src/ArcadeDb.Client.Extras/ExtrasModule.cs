@@ -8,13 +8,10 @@ namespace ArcadeDb.Client.Extras;
 
 public static class ExtrasModule
 {
-    public static void Initialize()
-    {
-        Json.DefaultSerializerOptions.ConfigureForNodaTime(DateTimeZoneProviders.Tzdb);
-    }
-
     public static IServiceCollection AddArcadeDbClientExtras(this IServiceCollection serviceCollection)
     {
+        Json.DefaultSerializerOptions.ConfigureForNodaTime(DateTimeZoneProviders.Tzdb);
+
         return serviceCollection
             .AddSingleton(typeof(ISimpleRepository<>), typeof(SimpleRepository<>))
             .AddSingleton(typeof(IVertexRepository<>), typeof(VertexRepository<>));
