@@ -48,6 +48,7 @@ public class SimpleRepository<T> : ISimpleRepository<T>
         // TODO: This should happen somewhere else.
         var entityType = typeof(T).IsAssignableTo(typeof(Entity.Vertex)) ? "VERTEX" : "DOCUMENT";
         this.Database.Execute<JsonElement>($"CREATE {entityType} TYPE {EntityName} IF NOT EXISTS").Wait();
+        // TODO: Deal with indexes/constraints/properties.
     }
 
     public async Task<T?> Get(RecordId recordId)
