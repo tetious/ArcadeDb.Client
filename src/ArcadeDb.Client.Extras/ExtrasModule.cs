@@ -13,6 +13,7 @@ public static class ExtrasModule
         Json.DefaultSerializerOptions.ConfigureForNodaTime(DateTimeZoneProviders.Tzdb);
 
         return serviceCollection
+            .AddScoped<IUnitOfWork, UnitOfWork>()
             .AddSingleton(typeof(ISimpleRepository<>), typeof(SimpleRepository<>))
             .AddSingleton(typeof(IVertexRepository<>), typeof(VertexRepository<>));
     }

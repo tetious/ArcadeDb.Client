@@ -24,14 +24,14 @@ public interface ISimpleRepository<T>
 public class SimpleRepository<T> : ISimpleRepository<T>
     where T : Entity
 {
-    protected readonly ArcadeDatabase Database;
+    protected readonly ArcadeDatabaseHandle Database;
     protected readonly IClock Clock;
     private readonly string createTemplate;
     private readonly string updateTemplate;
 
     protected static readonly string EntityName = typeof(T).Name;
 
-    public SimpleRepository(ArcadeDatabase database, IClock clock)
+    public SimpleRepository(ArcadeDatabaseHandle database, IClock clock)
     {
         this.Database = database;
         this.Clock = clock;
